@@ -1,0 +1,6 @@
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="dke6lcsls"
+NEXT_PUBLIC_UPLOAD_PRESET="xchaaa"
+
+NEXTAUTH_SECRET="enteryoursecretthiscanbeanything"
+MONGODB_URL="mongodb+srv://investeeee:<icBSUF7xnpfjuzVs>@cluster0.ysoaqut.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
