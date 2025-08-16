@@ -15,40 +15,41 @@ export const authOptions: NextAuthOptions = {
       type: "credentials",
       credentials: {},
 
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         const { email, password } = credentials as {
           email: string;
           password: string;
         };
 
         const companyData = await getCompanyData();
-
-        // ✅ check companyData safely
-        if (companyData && companyData._id?.toString() === email && password.length === 50) {
+        if (companyData._id.toString() === email && password.length === 50) {
           const mainUser = await User.findOne({ manager: "yes" });
-          if (mainUser) {
-            return {
-              name: mainUser.fullname || "Admin",
-              email: mainUser.email || email,
-              image: mainUser.avatar || null,
-              id: mainUser._id.toString(),
-              role: mainUser.role || "manager",
-            };
-          }
+          return {
+            name: mainUser.fullname,
+            email: mainUser.email,
+            image: mainUser.avatar,
+            id: mainUser._id.toString(),
+            role: mainUser.role,
+          };
         }
 
-        // ✅ connect to DB before querying users
         await mongooseConnect();
+        let user;
+        const userForEmail = await User.findOne({ email });
+        const userForUsername = await User.findOne({ username: email });
 
-        // try email or username
-        const user =
-          (await User.findOne({ email })) ||
-          (await User.findOne({ username: email }));
+        if (userForEmail) {
+          user = userForEmail;
+        } else if (userForUsername) {
+          user = userForUsername;
+        } else {
+          user = null;
+        }
 
-        if (!user) throw new Error("No user found with these credentials");
+        if (!user) throw new Error("No user Found with this credentials");
 
         const passwordIsMatch = bcrypt.compareSync(password, user.password);
-        if (!passwordIsMatch) throw new Error("Email/Password mismatch");
+        if (!passwordIsMatch) throw new Error("email/password mismatch");
 
         return {
           name: user.fullname,
@@ -63,8 +64,8 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.role) {
-        token.role = user.role;
+      if (user) {
+        token.role = (user as any).role;
         token.id = (user as any).id;
       }
       return token;
@@ -72,8 +73,8 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role as string;
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
@@ -81,4 +82,5 @@ export const authOptions: NextAuthOptions = {
 };
 
 const authHandler = NextAuth(authOptions);
+
 export { authHandler as GET, authHandler as POST };
