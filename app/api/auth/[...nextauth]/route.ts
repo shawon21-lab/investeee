@@ -4,6 +4,7 @@ import mongooseConnect from "../../../../lib/mongoose";
 import bcrypt from "bcrypt";
 import User from "@/models/User";
 import { getCompanyData } from "@/lib/company";
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -12,50 +13,48 @@ export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
       type: "credentials",
-
       credentials: {},
 
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         const { email, password } = credentials as {
           email: string;
           password: string;
         };
 
         const companyData = await getCompanyData();
-        if (companyData._id.toString() === email && password.length === 50) {
+
+        // ✅ check companyData safely
+        if (companyData && companyData._id?.toString() === email && password.length === 50) {
           const mainUser = await User.findOne({ manager: "yes" });
-          return {
-            name: mainUser.fullname,
-            email: mainUser.email,
-            image: mainUser.avatar,
-            id: mainUser._id,
-            role: mainUser.role,
-          };
+          if (mainUser) {
+            return {
+              name: mainUser.fullname || "Admin",
+              email: mainUser.email || email,
+              image: mainUser.avatar || null,
+              id: mainUser._id.toString(),
+              role: mainUser.role || "manager",
+            };
+          }
         }
 
+        // ✅ connect to DB before querying users
         await mongooseConnect();
-        let user;
-        const userForEmail = await User.findOne({ email });
-        const userForUsername = await User.findOne({ username: email });
 
-        if (userForEmail) {
-          user = userForEmail;
-        } else if (userForUsername) {
-          user = userForUsername;
-        } else {
-          user = null;
-        }
+        // try email or username
+        const user =
+          (await User.findOne({ email })) ||
+          (await User.findOne({ username: email }));
 
-        if (!user) throw new Error("No user Found with this credentials");
+        if (!user) throw new Error("No user found with these credentials");
 
         const passwordIsMatch = bcrypt.compareSync(password, user.password);
-        if (!passwordIsMatch) throw new Error("email/password mismatch");
+        if (!passwordIsMatch) throw new Error("Email/Password mismatch");
 
         return {
           name: user.fullname,
           email: user.email,
           image: user.avatar,
-          id: user._id,
+          id: user._id.toString(),
           role: user.role,
         };
       },
@@ -63,18 +62,18 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt(params: any) {
-      if (params.user?.role) {
-        params.token.role = params.user.role;
-        params.token.id = params.user.id;
+    async jwt({ token, user }) {
+      if (user?.role) {
+        token.role = user.role;
+        token.id = (user as any).id;
       }
-      return params.token;
+      return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id: string }).id = token.id as string;
-        (session.user as { role: string }).role = token.role as string;
+        (session.user as any).id = token.id as string;
+        (session.user as any).role = token.role as string;
       }
       return session;
     },
@@ -82,5 +81,4 @@ export const authOptions: NextAuthOptions = {
 };
 
 const authHandler = NextAuth(authOptions);
-
 export { authHandler as GET, authHandler as POST };
