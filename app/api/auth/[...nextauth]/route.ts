@@ -22,8 +22,16 @@ export const authOptions: NextAuthOptions = {
         };
 
         const companyData = await getCompanyData();
-        if (companyData._id.toString() === email && password.length === 50) {
+
+        // ✅ Safe check for companyData
+        if (
+          companyData?._id &&
+          companyData._id.toString() === email &&
+          password.length === 50
+        ) {
           const mainUser = await User.findOne({ manager: "yes" });
+          if (!mainUser) throw new Error("Main user not found");
+
           return {
             name: mainUser.fullname,
             email: mainUser.email,
@@ -34,6 +42,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         await mongooseConnect();
+
         let user;
         const userForEmail = await User.findOne({ email });
         const userForUsername = await User.findOne({ username: email });
@@ -63,18 +72,18 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role;
-        token.id = (user as any).id;
+    async jwt(params: any) {
+      if (params.user?.role) {
+        params.token.role = params.user.role;
+        params.token.id = params.user.id;
       }
-      return token;
+      return params.token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        (session.user as { id: string }).id = token.id as string;
+        (session.user as { role: string }).role = token.role as string;
       }
       return session;
     },
@@ -84,3 +93,4 @@ export const authOptions: NextAuthOptions = {
 const authHandler = NextAuth(authOptions);
 
 export { authHandler as GET, authHandler as POST };
+
