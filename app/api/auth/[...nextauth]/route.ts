@@ -3,8 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import mongooseConnect from "../../../../lib/mongoose";
 import bcrypt from "bcrypt";
 import User from "@/models/User";
-import { getCompanyData } from "@/app/layout";
-
+import { getCompanyData } from "@/lib/company";
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
