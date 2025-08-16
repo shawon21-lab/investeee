@@ -6,9 +6,9 @@ import { Nunito } from "next/font/google";
 import AuthProvider from "@/components/AuthProvider";
 import ClientOnly from "@/components/ClientOnly";
 
+import { getCompanyData } from "@/lib/company"; // ✅ moved here
 import mongooseConnect from "@/lib/mongoose";
 import Company from "@/models/Company";
-import nextLogger from "@/constants/logger";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -17,22 +17,6 @@ const nunito = Nunito({
   style: ["italic", "normal"],
 });
 
-export const getCompanyData = async () => {
-  await mongooseConnect();
-  let initialCompany: CompanyProps | null;
-  const companies = await Company.find<CompanyProps>({});
-
-  if (companies.length <= 0) {
-    const newCompany = new Company({ name: "Enter company name" });
-    const savedCompany = await newCompany.save();
-    initialCompany = savedCompany;
-  } else {
-    initialCompany = companies[0];
-  }
-  const plainObject: CompanyProps = JSON.parse(JSON.stringify(initialCompany));
-  return plainObject;
-};
-
 export async function generateMetadata(): Promise<Metadata> {
   await mongooseConnect();
   const companies = await Company.find<CompanyProps>({});
@@ -40,12 +24,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: company?.head?.title || "Not set",
-
-    icons: company?.head?.iconUrl.startsWith("https")
+    icons: company?.head?.iconUrl?.startsWith("https")
       ? company?.head?.iconUrl
-      : company?.head?.iconUrl.replace("http", "https") ||
+      : company?.head?.iconUrl?.replace("http", "https") ||
         "https://example.com/image.jpg",
-
     description: company?.head?.description || "Not set",
   };
 }
@@ -55,7 +37,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const company = await getCompanyData();
+  const company = await getCompanyData(); // ✅ now imported
 
   return (
     <AuthProvider>
