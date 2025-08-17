@@ -38,13 +38,35 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const company = await getCompanyData(); // ✅ now imported
+  const company = await getCompanyData(); // raw data from DB
+
+  // ✅ Ensure all required CompanyProps fields are safe
+  const safeCompany: CompanyProps = {
+    name: company?.name || "Default Company",
+    baseUrl: company?.baseUrl || "https://example.com",
+    nowPaymentApi: company?.nowPaymentApi || "",
+    address: company?.address || "Not provided",
+    email: company?.email || "info@example.com",
+    phone: company?.phone || "000-000-0000",
+    currency: company?.currency || "USD",
+    lastInvestmentDailyCronJob: company?.lastInvestmentDailyCronJob || new Date(),
+    head: {
+      title: company?.head?.title || "Default Title",
+      description: company?.head?.description || "Default Description",
+      iconUrl: company?.head?.iconUrl || "https://example.com/icon.png",
+    },
+    // add all other fields your CompanyProps requires:
+    footerText: company?.footerText || "© Default Company",
+    socialLinks: company?.socialLinks || [],
+    theme: company?.theme || "light",
+  };
 
   return (
     <AuthProvider>
       <html lang="en">
         <body className={`${nunito.className} max-w-[2520px] min-h-screen`}>
-          <ClientOnly companyData={company}>
+          {/* ✅ Always pass safeCompany instead of raw company */}
+          <ClientOnly companyData={safeCompany}>
             <ToastProvider />
             {children}
           </ClientOnly>
@@ -53,3 +75,4 @@ export default async function RootLayout({
     </AuthProvider>
   );
 }
+
