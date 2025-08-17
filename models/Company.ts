@@ -1,19 +1,17 @@
-import { Schema, model, models } from "mongoose";
+import mongooseConnect from "@/lib/mongoose";
+import Company from "@/models/Company";
 
-interface CompanyProps {
+export interface CompanyProps {
   name: string;
   baseUrl: string;
   nowPaymentApi: string;
   address: string;
-  //this is for meta data
   head: {
     iconUrl: string;
     title: string;
     description: string;
   };
-
   lastInvestmentDailyCronJob: number;
-
   logo: {
     public_id: string;
     url: string;
@@ -27,57 +25,33 @@ interface CompanyProps {
     etag: string;
     thumbnail_url: string;
   };
-
   welcomeEmail: {
     status: "on" | "off";
     emailMessage: string;
   };
-
   currency: { name: string; code: string; symbol: string };
-
   transfer: {
     minimum: number;
     maximum: number;
-    percentToPay: number; //percentage the receiver needs to deposit to clear the pending transfer if mode is set to pending-mode
+    percentToPay: number;
     mode: "direct-mode" | "pending-mode";
     allowTransferIfPendingAvailable: "yes" | "no";
   };
-
-  desposit: {
-    minimum: number;
-    maximum: number;
-  };
-
+  desposit: { minimum: number; maximum: number };
   withdraw: {
     minimum: number;
     maximum: number;
     coinWithdrawal: "on" | "off";
     bankWithdrawal: "on" | "off";
   };
-
-  signupBonus: {
-    status: "on" | "off";
-    amount: number;
-  };
-
-  loan: {
-    status: "on" | "off";
-    minimum: number;
-    maximum: number;
-  };
-
+  signupBonus: { status: "on" | "off"; amount: number };
+  loan: { status: "on" | "off"; minimum: number; maximum: number };
   payment: {
     bankTransfer: "on" | "off";
     manualCoinPayment: "on" | "off";
     automaticCoinPayment: "on" | "off";
   };
-
-  color: {
-    primary: string;
-    primaryLight: string;
-    primaryVeryLight: string;
-  };
-
+  color: { primary: string; primaryLight: string; primaryVeryLight: string };
   emailSetup: {
     host: string;
     port: number;
@@ -87,127 +61,62 @@ interface CompanyProps {
   };
 }
 
-const companySchema = new Schema<CompanyProps>(
-  {
-    name: { type: String, trim: true, default: "not set" },
-    baseUrl: { type: String, trim: true, default: "not set" },
-    nowPaymentApi: {
-      type: String,
-      trim: true,
-      default: "not set",
-    },
-    address: {
-      type: String,
-      trim: true,
-      default: "408 Warren Rd - San Mateo, CA 94402",
-    },
-
-    head: {
-      iconUrl: { type: String, default: "https://example.com/image.jpg" },
-      title: { type: String, default: "not set" },
-      description: { type: String, default: "not set" },
-    },
-
-    lastInvestmentDailyCronJob: { type: Number, default: 0 },
-
-    logo: {
-      url: { type: String, default: "https://example.com/image.jpg" },
-      public_id: { type: String, default: "not set" },
-      secure_url: { type: String, default: "https://example.com/image.jpg" },
-      format: { type: String, default: "not set" },
-      width: { type: Number, default: 0 },
-      height: { type: Number, default: 0 },
-      bytes: { type: Number, default: 0 },
-      original_filename: { type: String, default: "not set" },
-      created_at: { type: String, default: "not set" },
-      etag: { type: String, default: "not set" },
-      thumbnail_url: { type: String, default: "not set" },
-    },
-
-    welcomeEmail: {
-      status: { type: String, default: "off", enum: ["on", "off"] },
-      emailMessage: { type: String, default: "Welcome" },
-    },
-
-    currency: {
-      name: { type: String, default: "United States Dollar" },
-      code: { type: String, default: "USD" },
-      symbol: { type: String, default: "$" },
-    },
-
-    transfer: {
-      minimum: { type: Number, default: 0 },
-      maximum: { type: Number, default: 0 },
-      percentToPay: { type: Number, default: 0 },
-      mode: {
-        type: String,
-        default: "direct-mode",
-        enum: ["direct-mode", "pending-mode"],
-      },
-      allowTransferIfPendingAvailable: {
-        type: String,
-        default: "yes",
-        enum: ["yes", "no"],
-      },
-    },
-
-    desposit: {
-      minimum: { type: Number, default: 0 },
-      maximum: { type: Number, default: 0 },
-    },
-
-    withdraw: {
-      minimum: { type: Number, default: 0 },
-      maximum: { type: Number, default: 0 },
-    },
-
-    signupBonus: {
-      status: { type: String, default: "off", enum: ["on", "off"] },
-      amount: { type: Number, default: 0 },
-    },
-
-    loan: {
-      status: { type: String, default: "off", enum: ["on", "off"] },
-      minimum: { type: Number, default: 0 },
-      maximum: { type: Number, default: 0 },
-    },
-
-    payment: {
-      bankTransfer: { type: String, default: "off", enum: ["on", "off"] },
-      manualCoinPayment: { type: String, default: "off", enum: ["on", "off"] },
-      automaticCoinPayment: {
-        type: String,
-        default: "off",
-        enum: ["on", "off"],
-      },
-    },
-
-    color: {
-      primary: { type: String, trim: true, default: "#c32f27" },
-      primaryLight: {
-        type: String,
-        trim: true,
-        default: "#e35d56",
-      },
-      primaryVeryLight: {
-        type: String,
-        trim: true,
-        default: "#f2dcdc",
-      },
-    },
-
-    emailSetup: {
-      host: { type: String, trim: true, default: "not set" },
-      port: { type: Number, default: 0 },
-      secure: { type: Boolean, default: true },
-      from: { type: String, trim: true, default: "not set" },
-      auth: {
-        user: { type: String, default: "not set" },
-        pass: { type: String, default: "not set" },
-      },
-    },
+// ✅ default factory
+export const safeCompany = (): CompanyProps => ({
+  name: "not set",
+  baseUrl: "not set",
+  nowPaymentApi: "not set",
+  address: "408 Warren Rd - San Mateo, CA 94402",
+  head: {
+    iconUrl: "https://example.com/image.jpg",
+    title: "not set",
+    description: "not set",
   },
-  { timestamps: true }
-);
+  lastInvestmentDailyCronJob: 0,
+  logo: {
+    public_id: "not set",
+    url: "https://example.com/image.jpg",
+    secure_url: "https://example.com/image.jpg",
+    format: "not set",
+    width: 0,
+    height: 0,
+    bytes: 0,
+    original_filename: "not set",
+    created_at: "not set",
+    etag: "not set",
+    thumbnail_url: "not set",
+  },
+  welcomeEmail: { status: "off", emailMessage: "Welcome" },
+  currency: { name: "United States Dollar", code: "USD", symbol: "$" },
+  transfer: {
+    minimum: 0,
+    maximum: 0,
+    percentToPay: 0,
+    mode: "direct-mode",
+    allowTransferIfPendingAvailable: "yes",
+  },
+  desposit: { minimum: 0, maximum: 0 },
+  withdraw: { minimum: 0, maximum: 0, coinWithdrawal: "off", bankWithdrawal: "off" },
+  signupBonus: { status: "off", amount: 0 },
+  loan: { status: "off", minimum: 0, maximum: 0 },
+  payment: {
+    bankTransfer: "off",
+    manualCoinPayment: "off",
+    automaticCoinPayment: "off",
+  },
+  color: { primary: "#c32f27", primaryLight: "#e35d56", primaryVeryLight: "#f2dcdc" },
+  emailSetup: {
+    host: "not set",
+    port: 0,
+    secure: true,
+    from: "not set",
+    auth: { user: "not set", pass: "not set" },
+  },
+});
 
-export default models.Company || model<CompanyProps>("Company", companySchema);
+// ✅ main accessor
+export async function getCompanyData(): Promise<CompanyProps> {
+  await mongooseConnect();
+  const company = await Company.findOne({});
+  return { ...safeCompany(), ...(company?.toObject?.() || {}) };
+}
